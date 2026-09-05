@@ -1,0 +1,55 @@
+# Secrets / credentials
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+credentials.json
+token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+develop-eggs/
+.eggs/
+*.egg-info/
+*.egg
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ipynb_checkpoints
+cython_debug/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Logs / db
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+# OS / editor
+.DS_Store
+models/.DS_Store
+
+# Large data dumps (not code)
+drive-download-*/
+data/
+*.pdf
+
+# Scratch
+race.py
+test.py
