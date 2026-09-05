@@ -32,10 +32,72 @@ def build_fallback(
     question: str = "",
 ) -> AgentResponse:
     if mode == "investigate":
+        selected = evidence.get("selected_anomaly", {})
+        if str(selected.get("id", "")).startswith("cross-"):
+            return _cross_investigation(evidence, warnings)
         return _investigation(evidence, warnings)
     if mode == "report":
         return _report(evidence, warnings)
     return _query(evidence, warnings, question)
+
+
+def _cross_actions(anomaly: dict[str, Any]) -> list[RecommendedAction]:
+    steps = anomaly.get("recommended_investigation") or [
+        "Review the correlated deterministic evidence before acting."
+    ]
+    return [
+        RecommendedAction(title=f"Investigation step {index + 1}", description=step)
+        for index, step in enumerate(steps[:3])
+    ]
+
+
+def _cross_investigation(
+    evidence: dict[str, Any], warnings: list[str]
+) -> AgentResponse:
+    anomaly = evidence.get("selected_anomaly", {})
+    signals = anomaly.get("signals", [])
+    findings = [
+        AgentFinding(
+            title=anomaly.get("title", "Cross-signal anomaly"),
+            description=anomaly.get(
+                "why_flagged", "Correlated deterministic signals require review."
+            ),
+            metric="cross_signal_risk_score",
+            current_value=anomaly.get("cross_signal_risk_score"),
+            sample_size=anomaly.get("sample_size"),
+        )
+    ]
+    for signal in signals[:3]:
+        findings.append(
+            AgentFinding(
+                title=f"Correlated signal: {str(signal.get('metric', '')).replace('_', ' ')}",
+                description=signal.get("note")
+                or "This signal moved as part of the flagged combination.",
+                metric=signal.get("metric"),
+                current_value=signal.get("current_value"),
+                baseline_value=signal.get("baseline_value"),
+            )
+        )
+    return AgentResponse(
+        answer=(
+            "Multiple deterministic signals moved together across domains. This is a "
+            "potential pattern that warrants investigation; it is not a confirmed "
+            "conclusion. Review the correlated evidence before acting."
+        ),
+        summary=(
+            f"{anomaly.get('entity_name', 'Entity')}: "
+            f"{anomaly.get('title', 'cross-signal pattern')} requires investigation."
+        ),
+        severity=anomaly.get("severity", "medium"),
+        confidence=anomaly.get("confidence", "medium"),
+        synthesis_mode="deterministic_fallback",
+        findings=findings,
+        recommended_actions=_cross_actions(anomaly),
+        evidence=_refs(evidence),
+        data_quality_warnings=_warnings(
+            warnings + list(anomaly.get("data_quality_warnings", []))
+        ),
+    )
 
 
 def _investigation(evidence: dict[str, Any], warnings: list[str]) -> AgentResponse:
@@ -104,6 +166,7 @@ def _investigation(evidence: dict[str, Any], warnings: list[str]) -> AgentRespon
 def _report(evidence: dict[str, Any], warnings: list[str]) -> AgentResponse:
     overview = evidence.get("get_monthly_overview_tool", {}).get("metrics", {})
     anomalies = evidence.get("detect_anomalies_tool", [])
+    cross = evidence.get("detect_cross_domain_anomalies_tool", [])
     shifts = evidence.get("get_shift_readiness_tool", {}).get("shifts", [])
     cost = evidence.get("analyze_cost_tool", {})
     findings: list[AgentFinding] = []
@@ -135,6 +198,17 @@ def _report(evidence: dict[str, Any], warnings: list[str]) -> AgentResponse:
                 baseline_value=anomaly.get("baseline_value"),
                 change=anomaly.get("absolute_change"),
                 sample_size=anomaly.get("sample_size"),
+            )
+        )
+    if cross:
+        top = cross[0]
+        findings.append(
+            AgentFinding(
+                title=f"Top cross-signal concern: {top.get('title', 'pattern')}",
+                description=top.get("why_flagged", ""),
+                metric="cross_signal_risk_score",
+                current_value=top.get("cross_signal_risk_score"),
+                sample_size=top.get("sample_size"),
             )
         )
     if shifts:
@@ -206,6 +280,7 @@ def _query(
     cost = evidence.get("analyze_cost_tool")
     shifts = evidence.get("get_shift_readiness_tool", {}).get("shifts", [])
     anomalies = evidence.get("detect_anomalies_tool", [])
+    cross = evidence.get("detect_cross_domain_anomalies_tool", [])
     vendors = evidence.get("compare_vendor_performance_tool", {}).get("vendors", [])
     improving = (
         next(
@@ -224,7 +299,41 @@ def _query(
         )
     ]
     severity = "informational"
-    if vendor_detail:
+    if cross:
+        top = cross[0]
+        findings.append(
+            AgentFinding(
+                title=top.get("title", "Cross-signal anomaly"),
+                description=top.get(
+                    "why_flagged", "Correlated deterministic signals require review."
+                ),
+                metric="cross_signal_risk_score",
+                current_value=top.get("cross_signal_risk_score"),
+                sample_size=top.get("sample_size"),
+            )
+        )
+        for signal in top.get("signals", [])[:2]:
+            findings.append(
+                AgentFinding(
+                    title=f"Correlated signal: {str(signal.get('metric', '')).replace('_', ' ')}",
+                    description=signal.get("note")
+                    or "Part of the flagged combination.",
+                    metric=signal.get("metric"),
+                    current_value=signal.get("current_value"),
+                    baseline_value=signal.get("baseline_value"),
+                )
+            )
+        summary = (
+            f"{top.get('entity_name', 'Entity')}: {top.get('title', 'cross-signal pattern')}"
+        )
+        answer = (
+            "The strongest suspicious pattern comes from signals correlated across "
+            "domains. These are potential issues to investigate, not confirmed "
+            "conclusions."
+        )
+        actions = _cross_actions(top)
+        severity = top.get("severity", "medium")
+    elif vendor_detail:
         vendor = vendor_detail.get("vendor", "Selected vendor")
         metrics = vendor_detail.get("metrics", {})
         alert_rate = metrics.get("alerts_per_1000_trips", {})

@@ -4,6 +4,7 @@ import pytest
 
 from app.llm.factory import create_llm_provider
 from app.llm.provider import (
+    AnthropicProvider,
     FallbackProvider,
     LLMConfigurationError,
     OpenAIProvider,
@@ -19,6 +20,8 @@ ENV_NAMES = (
     "SARVAM_MODEL",
     "OPENAI_API_KEY",
     "OPENAI_MODEL",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_MODEL",
     "LLM_API_KEY",
     "LLM_MODEL",
     "DEMO_MODE",
@@ -52,6 +55,32 @@ def test_openai_can_be_selected_directly(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setenv("OPENAI_API_KEY", "test-openai")
     monkeypatch.setenv("OPENAI_MODEL", "gpt-5-mini")
     assert isinstance(create_llm_provider(), OpenAIProvider)
+
+
+def test_anthropic_can_be_selected_with_default_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _clear(monkeypatch)
+    monkeypatch.setenv("LLM_PROVIDER", "anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-anthropic")
+    provider = create_llm_provider()
+    assert isinstance(provider, AnthropicProvider)
+    assert provider.model == "claude-sonnet-5"
+
+
+def test_anthropic_can_be_configured_as_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _clear(monkeypatch)
+    monkeypatch.setenv("LLM_PROVIDER", "sarvam")
+    monkeypatch.setenv("LLM_FALLBACK_PROVIDER", "anthropic")
+    monkeypatch.setenv("SARVAM_API_KEY", "test-sarvam")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-anthropic")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-custom-test")
+    provider = create_llm_provider()
+    assert isinstance(provider, FallbackProvider)
+    assert isinstance(provider.fallback, AnthropicProvider)
+    assert provider.fallback.model == "claude-custom-test"
 
 
 def test_missing_primary_configuration_raises(monkeypatch: pytest.MonkeyPatch) -> None:

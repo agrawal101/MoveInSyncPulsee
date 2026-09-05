@@ -107,3 +107,55 @@ class Anomaly(BaseModel):
     supporting_dimensions: dict[str, Any] = Field(default_factory=dict)
     data_quality_warnings: list[str] = Field(default_factory=list)
 
+
+CrossDomainCategory = Literal[
+    "billing_integrity",
+    "safety_pattern",
+    "vendor_operational_divergence",
+    "shift_readiness_pattern",
+    "data_integrity_anomaly",
+]
+
+
+class CrossDomainSignal(BaseModel):
+    """One correlated deterministic signal contributing to a cross-domain anomaly."""
+
+    metric: str
+    current_value: float | int | None
+    baseline_value: float | int | None = None
+    peer_median: float | int | None = None
+    relative_change_pct: float | None = None
+    # "worse" / "better" describe operational direction, not raw arithmetic sign.
+    direction: Literal["worse", "better", "stable"]
+    weight: float
+    note: str | None = None
+
+
+class RiskComponent(BaseModel):
+    """Explainable additive contribution to cross_signal_risk_score."""
+
+    name: str
+    value: float
+    detail: str
+
+
+class CrossDomainAnomaly(BaseModel):
+    id: str
+    category: CrossDomainCategory
+    entity_type: str
+    entity_name: str
+    title: str
+    severity: Literal["low", "medium", "high"]
+    confidence: Literal["low", "medium", "high"]
+    # Never a fraud probability; an explainable prioritization score in [0, 100].
+    cross_signal_risk_score: float
+    signals: list[CrossDomainSignal] = Field(default_factory=list)
+    why_flagged: str
+    recommended_investigation: list[str] = Field(default_factory=list)
+    risk_components: list[RiskComponent] = Field(default_factory=list)
+    sample_size: int
+    month: str
+    baseline_month: str | None = None
+    supporting_dimensions: dict[str, Any] = Field(default_factory=dict)
+    data_quality_warnings: list[str] = Field(default_factory=list)
+

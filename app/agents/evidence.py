@@ -35,6 +35,7 @@ TOOL_LABELS = {
     "analyze_cost_tool": "cost",
     "get_experience_metrics_tool": "experience",
     "detect_anomalies_tool": "anomaly",
+    "detect_cross_domain_anomalies_tool": "cross_anomaly",
     "selected_anomaly": "selected_anomaly",
     "get_data_quality_report_tool": "quality",
 }
@@ -140,6 +141,10 @@ def compact_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
             ][:6] + [
                 item for item in value if item.get("severity") == "positive"
             ][:3]
+        elif tool == "detect_cross_domain_anomalies_tool" and isinstance(value, list):
+            compact[tool] = [
+                item for item in value if item.get("severity") in {"high", "medium"}
+            ][:6]
         elif tool == "compare_vendor_performance_tool" and isinstance(value, dict):
             compact[tool] = {**value, "vendors": value.get("vendors", [])[:6]}
         elif tool == "get_shift_readiness_tool" and isinstance(value, dict):

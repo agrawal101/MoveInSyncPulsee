@@ -52,6 +52,10 @@ def build_plan(state: AgentState) -> AgentState:
             ("get_monthly_overview_tool", {"month": month}),
             ("detect_anomalies_tool", {"month": month}),
             (
+                "detect_cross_domain_anomalies_tool",
+                {"month": month, "baseline_month": baseline},
+            ),
+            (
                 "compare_vendor_performance_tool",
                 {"current_month": month, "baseline_month": baseline},
             ),
@@ -61,11 +65,42 @@ def build_plan(state: AgentState) -> AgentState:
             ("get_data_quality_report_tool", {}),
         ]
     elif mode == "investigate":
-        names = [("detect_anomalies_tool", {"month": month})]
+        if str(state.get("anomaly_id") or "").startswith("cross-"):
+            names = [
+                (
+                    "detect_cross_domain_anomalies_tool",
+                    {"month": month, "baseline_month": baseline},
+                )
+            ]
+        else:
+            names = [("detect_anomalies_tool", {"month": month})]
     else:
         question = state["question"].lower()
         vendor = _vendor(state["question"])
-        if vendor:
+        if any(
+            keyword in question
+            for keyword in (
+                "suspicious",
+                "irregular",
+                "fraud",
+                "reconcil",
+                "overbill",
+                "cross-signal",
+                "cross signal",
+                "not appear",
+                "would not show",
+                "unusual",
+                "manipulat",
+            )
+        ):
+            names = [
+                (
+                    "detect_cross_domain_anomalies_tool",
+                    {"month": month, "baseline_month": baseline},
+                ),
+                ("detect_anomalies_tool", {"month": month}),
+            ]
+        elif vendor:
             names = [
                 (
                     "analyze_vendor_tool",
@@ -180,27 +215,37 @@ class MobilityAgentGraph:
             called.append(name)
 
         if state.get("mode") == "investigate":
+            anomaly_id = str(state.get("anomaly_id") or "")
+            source_tool = (
+                "detect_cross_domain_anomalies_tool"
+                if anomaly_id.startswith("cross-")
+                else "detect_anomalies_tool"
+            )
             anomaly = next(
                 (
                     item
-                    for item in evidence["detect_anomalies_tool"]
-                    if item["id"] == state.get("anomaly_id")
+                    for item in evidence.get(source_tool, [])
+                    if item["id"] == anomaly_id
                 ),
                 None,
             )
             if anomaly is None:
                 raise LookupError(f"Anomaly not found: {state.get('anomaly_id')}")
             evidence["selected_anomaly"] = anomaly
+            is_cross = anomaly_id.startswith("cross-")
+            category = anomaly.get("category", "")
+            baseline_arg = state.get("baseline_month") or _previous_label(state["month"])
             if anomaly["entity_type"] == "vendor":
                 vendor = anomaly["entity_name"]
+                # Cross-domain investigations follow the supporting-evidence flow:
+                # billing anomalies gather cost first, safety anomalies gather alerts.
                 extra = [
                     (
                         "analyze_vendor_tool",
                         {
                             "vendor": vendor,
                             "month": state["month"],
-                            "baseline_month": state.get("baseline_month")
-                            or _previous_label(state["month"]),
+                            "baseline_month": baseline_arg,
                         },
                     ),
                     (
@@ -212,6 +257,14 @@ class MobilityAgentGraph:
                         {"month": state["month"], "vendor": vendor},
                     ),
                 ]
+                if is_cross and category in {
+                    "billing_integrity",
+                    "data_integrity_anomaly",
+                }:
+                    extra.append(
+                        ("analyze_cost_tool", {"month": state["month"], "vendor": vendor})
+                    )
+                    extra.append(("get_data_quality_report_tool", {}))
             elif anomaly["entity_type"] == "shift":
                 extra = [("get_shift_readiness_tool", {"month": state["month"]})]
             else:
@@ -280,7 +333,14 @@ class MobilityAgentGraph:
         evidence = compact_evidence(state["evidence"])
         if state.get("mode") == "investigate" and "selected_anomaly" in evidence:
             # Investigation receives only the chosen anomaly, not unrelated anomaly rows.
-            evidence["detect_anomalies_tool"] = [evidence["selected_anomaly"]]
+            anomaly_id = str(state.get("anomaly_id") or "")
+            source_tool = (
+                "detect_cross_domain_anomalies_tool"
+                if anomaly_id.startswith("cross-")
+                else "detect_anomalies_tool"
+            )
+            if source_tool in evidence:
+                evidence[source_tool] = [evidence["selected_anomaly"]]
         provider_evidence = attach_evidence_ids(evidence)
 
         task = state.get("question") or (

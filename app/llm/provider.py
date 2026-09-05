@@ -277,6 +277,102 @@ class OpenAIProvider(LLMProvider):
         raise LLMResponseError("OpenAI structured output generation failed.")
 
 
+class AnthropicProvider(LLMProvider):
+    """Anthropic Messages API with SDK-native Pydantic structured output."""
+
+    provider_name = "anthropic"
+    OUTPUT_LIMITS = {"query": 1400, "investigate": 1700, "report": 2400}
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "claude-sonnet-5",
+        timeout_seconds: float = 18.0,
+    ) -> None:
+        from anthropic import Anthropic
+
+        # Repairs are bounded here; disable hidden SDK retries.
+        self.client = Anthropic(
+            api_key=api_key,
+            timeout=timeout_seconds,
+            max_retries=0,
+        )
+        self.model = model
+
+    def generate_structured(
+        self,
+        *,
+        system_prompt: str,
+        task: str,
+        evidence: dict[str, Any],
+        response_model: type[BaseModel],
+        workflow: str,
+    ) -> LLMResult:
+        from anthropic import APIConnectionError, APIStatusError, APITimeoutError
+
+        # The graph supplies the same compact, ID-annotated aggregate evidence used
+        # for Sarvam. This provider never loads mobility files or raw records.
+        payload = json.dumps(evidence, separators=(",", ":"), default=str)
+        prompt = f"Task:\n{task}\n\nApproved deterministic evidence:\n{payload}"
+        started = perf_counter()
+        for attempt in range(2):
+            try:
+                message = self.client.messages.parse(
+                    model=self.model,
+                    max_tokens=self.OUTPUT_LIMITS.get(workflow, 1400),
+                    system=system_prompt,
+                    messages=[{"role": "user", "content": prompt}],
+                    output_format=response_model,
+                )
+                parsed = getattr(message, "parsed_output", None)
+                if parsed is None:
+                    raise LLMResponseError(
+                        "Anthropic returned no schema-valid structured output."
+                    )
+                usage = getattr(message, "usage", None)
+                return LLMResult(
+                    output=parsed,
+                    provider=self.provider_name,
+                    model=str(getattr(message, "model", None) or self.model),
+                    latency_ms=round((perf_counter() - started) * 1000, 2),
+                    input_tokens=getattr(usage, "input_tokens", None),
+                    output_tokens=getattr(usage, "output_tokens", None),
+                    validation_result="repaired" if attempt else "passed",
+                )
+            except APITimeoutError as exc:
+                raise LLMTimeoutError(
+                    "Anthropic request exceeded configured timeout."
+                ) from exc
+            except APIConnectionError as exc:
+                raise LLMProviderError("Unable to connect to Anthropic.") from exc
+            except APIStatusError as exc:
+                if exc.status_code in {401, 403}:
+                    raise LLMAuthenticationError(
+                        "Anthropic rejected the configured API key."
+                    ) from exc
+                if exc.status_code == 429:
+                    raise LLMRateLimitError(
+                        "Anthropic rate limit or quota was exceeded."
+                    ) from exc
+                raise LLMProviderError(
+                    f"Anthropic returned HTTP {exc.status_code}."
+                ) from exc
+            except (ValidationError, LLMResponseError) as exc:
+                if attempt == 0:
+                    detail = str(exc).replace("\n", " ")[:500]
+                    prompt += (
+                        "\n\nRepair the previous response once. Return the exact schema, "
+                        "copy evidence_id, metric, and values from one evidence object, "
+                        "and add no numeric prose. Validation issue: "
+                        + detail
+                    )
+                    continue
+                raise LLMResponseError(
+                    "Anthropic structured output failed after one repair attempt."
+                ) from exc
+        raise LLMResponseError("Anthropic structured output generation failed.")
+
+
 class FallbackProvider(LLMProvider):
     """Try one provider, then one configured fallback without duplicating agent logic."""
 

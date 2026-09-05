@@ -30,9 +30,15 @@ QUESTIONS = [
 
 def _preflight() -> None:
     provider = os.getenv("LLM_PROVIDER", "").strip().lower()
-    if provider not in {"sarvam", "openai"}:
-        raise SystemExit("Set LLM_PROVIDER to sarvam or openai before running live calls.")
-    key_name = "SARVAM_API_KEY" if provider == "sarvam" else "OPENAI_API_KEY"
+    if provider not in {"sarvam", "openai", "anthropic"}:
+        raise SystemExit(
+            "Set LLM_PROVIDER to sarvam, openai, or anthropic before running live calls."
+        )
+    key_name = {
+        "sarvam": "SARVAM_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "anthropic": "ANTHROPIC_API_KEY",
+    }[provider]
     if not os.getenv(key_name, "").strip():
         raise SystemExit(f"Set {key_name} before running live calls.")
     if os.getenv("LLM_FALLBACK_PROVIDER", "").strip().lower() == "openai":
@@ -104,6 +110,7 @@ def run() -> int:
         "fallback_provider": os.getenv("LLM_FALLBACK_PROVIDER") or None,
         "sarvam_model": os.getenv("SARVAM_MODEL", "sarvam-105b"),
         "openai_model": os.getenv("OPENAI_MODEL") or None,
+        "anthropic_model": os.getenv("ANTHROPIC_MODEL") or None,
         "settings": {
             "timeout_seconds": float(os.getenv("LLM_TIMEOUT_SECONDS", "18")),
             "sarvam_temperature": 0.2,

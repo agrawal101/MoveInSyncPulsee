@@ -1,6 +1,7 @@
 from __future__ import annotations
 from langchain_core.tools import tool
 from app.analytics.anomaly_detection import detect_anomalies
+from app.analytics.cross_domain_anomalies import detect_cross_domain_anomalies
 from app.analytics.service import AnalyticsService
 
 def _dump(value):
@@ -57,6 +58,11 @@ def detect_anomalies_tool(month: str) -> list[dict]:
     """Return deterministic negative and positive anomalies using prior-month and peer comparisons with minimum samples."""
     return _dump(detect_anomalies(month))
 
-TOOLS = [get_monthly_overview_tool, compare_vendor_performance_tool, analyze_vendor_tool, get_shift_readiness_tool, analyze_safety_alerts_tool, analyze_delay_causes_tool, analyze_cost_tool, get_experience_metrics_tool, get_data_quality_report_tool, detect_anomalies_tool]
+@tool
+def detect_cross_domain_anomalies_tool(month: str, baseline_month: str | None = None) -> list[dict]:
+    """Return deterministic CROSS-DOMAIN anomalies: suspicious combinations that correlate billing, safety, service, shift, and data-quality signals (potential billing irregularities, safety divergence, vendor divergence, shift readiness, data integrity). Prefer for questions about suspicious patterns, possible billing irregularity/reconciliation, unusual cross-signal vendor behavior, or anomalies a normal report would miss. The engine detects deterministically; never assert fraud."""
+    return _dump(detect_cross_domain_anomalies(month, baseline_month))
+
+TOOLS = [get_monthly_overview_tool, compare_vendor_performance_tool, analyze_vendor_tool, get_shift_readiness_tool, analyze_safety_alerts_tool, analyze_delay_causes_tool, analyze_cost_tool, get_experience_metrics_tool, get_data_quality_report_tool, detect_anomalies_tool, detect_cross_domain_anomalies_tool]
 TOOL_REGISTRY = {item.name: item for item in TOOLS}
 

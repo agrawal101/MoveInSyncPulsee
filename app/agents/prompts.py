@@ -13,6 +13,8 @@ compare, prioritize, monitor, or escalate for review.
 Keep evidence-reference descriptions under twelve words and never restate evidence values there.
 Use no more than four findings, three actions, and the minimum necessary evidence references.
 Never infer causality without evidence. Correlation and concentration are not proof of cause.
+Cross-domain and billing findings are potential irregularities requiring reconciliation review, never proven fraud.
+Never state or imply that fraud, theft, or intentional overbilling has been confirmed; describe such risks only as possibilities to investigate.
 Never claim statistical significance, systemic impact, or a service threshold unless deterministic evidence explicitly supplies it.
 Use high, medium, or positive severity only when that exact severity is present in evidence; otherwise use informational.
 Separate each observed finding from interpretation and recommended action.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from app.llm.provider import (
+    AnthropicProvider,
     FallbackProvider,
     LLMConfigurationError,
     LLMProvider,
@@ -65,6 +66,15 @@ def _build_provider(name: str, timeout_seconds: float) -> LLMProvider:
         )
         return OpenAIProvider(key, model, timeout_seconds)
 
+    if name == "anthropic":
+        key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+        if not key:
+            raise LLMConfigurationError(
+                "ANTHROPIC_API_KEY is required when Anthropic is configured."
+            )
+        model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5").strip()
+        return AnthropicProvider(key, model, timeout_seconds)
+
     raise LLMConfigurationError(f"Unsupported LLM provider: {name}")
 
 
@@ -74,7 +84,7 @@ def create_llm_provider() -> LLMProvider:
         if demo_mode_enabled():
             return UnavailableProvider()
         raise LLMConfigurationError(
-            "LLM_PROVIDER is required. Use sarvam, openai, or enable DEMO_MODE."
+            "LLM_PROVIDER is required. Use sarvam, openai, anthropic, or enable DEMO_MODE."
         )
 
     timeout_seconds = _timeout_seconds()
@@ -105,4 +115,6 @@ def is_llm_configured() -> bool:
             os.getenv("OPENAI_API_KEY", "").strip()
             or os.getenv("LLM_API_KEY", "").strip()
         )
+    if primary_name == "anthropic":
+        return bool(os.getenv("ANTHROPIC_API_KEY", "").strip())
     return False

@@ -2,6 +2,8 @@ import type {
   AgentResponse,
   Anomaly,
   Cost,
+  CrossDomainAnomaly,
+  CrossDomainCategory,
   DataQuality,
   Experience,
   Overview,
@@ -68,6 +70,10 @@ export const api = {
   overview: (month: string) => request<Overview>(`/api/overview?${query({ month })}`),
   anomalies: (month: string, limit = '50') =>
     request<Anomaly[]>(`/api/anomalies?${query({ month, limit })}`),
+  crossDomain: (month: string, baseline_month?: string, category?: CrossDomainCategory, limit = '20') =>
+    request<CrossDomainAnomaly[]>(
+      `/api/anomalies/cross-domain?${query({ month, baseline_month, category, limit })}`,
+    ),
   vendors: (month: string, baseline_month: string) =>
     request<VendorAnalysis>(`/api/vendors?${query({ month, baseline_month })}`),
   vendor: (name: string, month: string, baseline_month: string) =>

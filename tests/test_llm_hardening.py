@@ -14,6 +14,7 @@ from app.agents.validation import UnsupportedEvidenceError, validate_response_ev
 from app.analytics.anomaly_detection import detect_anomalies
 from app.api.deps import get_agent_service
 from app.llm.provider import (
+    AnthropicProvider,
     FallbackProvider,
     LLMAuthenticationError,
     LLMProvider,
@@ -686,3 +687,78 @@ def test_openai_timeout_is_mapped_to_typed_error() -> None:
             response_model=AgentSynthesis,
             workflow="query",
         )
+
+
+def test_anthropic_messages_parse_returns_structured_metadata() -> None:
+    class Messages:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, Any]] = []
+
+        def parse(self, **kwargs: Any) -> SimpleNamespace:
+            self.calls.append(kwargs)
+            return SimpleNamespace(
+                parsed_output=_agent_response(),
+                model="claude-sonnet-5",
+                usage=SimpleNamespace(input_tokens=321, output_tokens=87),
+            )
+
+    provider = AnthropicProvider.__new__(AnthropicProvider)
+    provider.client = SimpleNamespace(messages=Messages())
+    provider.model = "claude-sonnet-5"
+    evidence = compact_evidence(
+        {
+            "analyze_delay_causes_tool": {
+                "reasons": [{"delay_reason": "TRAFFIC", "trip_count": 20}],
+                "trip_evidence": [{"trip_id": "must-not-send"}],
+            }
+        }
+    )
+    result = provider.generate_structured(
+        system_prompt="Use evidence only.",
+        task="Summarize delay.",
+        evidence=evidence,
+        response_model=AgentSynthesis,
+        workflow="query",
+    )
+    call = provider.client.messages.calls[0]
+    assert call["output_format"] is AgentSynthesis
+    assert call["model"] == "claude-sonnet-5"
+    assert call["system"] == "Use evidence only."
+    assert "must-not-send" not in call["messages"][0]["content"]
+    assert result.provider == "anthropic"
+    assert result.model == "claude-sonnet-5"
+    assert result.input_tokens == 321
+    assert result.output_tokens == 87
+    assert result.validation_result == "passed"
+
+
+def test_anthropic_malformed_output_gets_one_bounded_repair() -> None:
+    parsed = _agent_response("Claude repaired response")
+
+    class Messages:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, Any]] = []
+
+        def parse(self, **kwargs: Any) -> SimpleNamespace:
+            self.calls.append(kwargs)
+            return SimpleNamespace(
+                parsed_output=None if len(self.calls) == 1 else parsed,
+                model="claude-sonnet-5",
+                usage=SimpleNamespace(input_tokens=222, output_tokens=66),
+            )
+
+    provider = AnthropicProvider.__new__(AnthropicProvider)
+    provider.client = SimpleNamespace(messages=Messages())
+    provider.model = "claude-sonnet-5"
+    result = provider.generate_structured(
+        system_prompt="Use evidence only.",
+        task="Summarize.",
+        evidence={"overview": {"count": 1}},
+        response_model=AgentSynthesis,
+        workflow="query",
+    )
+    assert len(provider.client.messages.calls) == 2
+    repair_prompt = provider.client.messages.calls[1]["messages"][0]["content"]
+    assert "Repair the previous response once" in repair_prompt
+    assert result.output.answer == "Claude repaired response"
+    assert result.validation_result == "repaired"
