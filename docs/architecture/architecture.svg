@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1360" viewBox="0 0 960 1360" font-family="Inter, Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1e3a5f"/>
+    </marker>
+    <style>
+      .layer{fill:#ffffff;stroke:#dbe3ec;stroke-width:1.5;rx:14;}
+      .title{fill:#0f2540;font-size:17px;font-weight:700;}
+      .sub{fill:#eef4fb;stroke:#cddffb;stroke-width:1;rx:8;}
+      .subt{fill:#25476b;font-size:12.5px;}
+      .band{font-size:12px;fill:#6b7a90;font-weight:600;letter-spacing:.06em;}
+      .flow{stroke:#1e3a5f;stroke-width:2.4;fill:none;}
+      .note{fill:#fff7ed;stroke:#f59e0b;stroke-width:1.2;rx:9;}
+      .notet{fill:#92400e;font-size:12px;font-weight:600;}
+      .accent{fill:#1668e3;}
+    </style>
+  </defs>
+
+  <rect width="960" height="1360" fill="#f7f9fb"/>
+  <text x="40" y="46" font-size="24" font-weight="800" fill="#0f2540">MoveInSync Pulse — System Architecture</text>
+  <text x="40" y="70" font-size="14" fill="#6b7a90">Sense → Correlate → Investigate → Reason → Act · deterministic evidence, grounded LLM narrative</text>
+
+  <!-- 1 Data Sources -->
+  <rect class="layer" x="60" y="96" width="600" height="86" rx="14"/>
+  <text class="band" x="80" y="120">DATA SOURCES · CSV</text>
+  <text class="title" x="80" y="120" opacity="0"> </text>
+  <g>
+    <rect class="sub" x="80" y="130" width="104" height="38" rx="8"/><text class="subt" x="94" y="154">Trips</text>
+    <rect class="sub" x="196" y="130" width="126" height="38" rx="8"/><text class="subt" x="210" y="154">Employee</text>
+    <rect class="sub" x="334" y="130" width="110" height="38" rx="8"/><text class="subt" x="348" y="154">Safety</text>
+    <rect class="sub" x="456" y="130" width="96" height="38" rx="8"/><text class="subt" x="470" y="154">Billing</text>
+    <rect class="sub" x="564" y="130" width="84" height="38" rx="8"/><text class="subt" x="578" y="154">Feedback</text>
+  </g>
+
+  <!-- 2 Data Quality -->
+  <rect class="layer" x="60" y="212" width="600" height="92" rx="14"/>
+  <text class="band" x="80" y="236">DATA QUALITY &amp; NORMALIZATION</text>
+  <rect class="sub" x="80" y="246" width="150" height="44" rx="8"/><text class="subt" x="94" y="266">Schema</text><text class="subt" x="94" y="282">reconciliation</text>
+  <rect class="sub" x="242" y="246" width="150" height="44" rx="8"/><text class="subt" x="256" y="266">Trip-ID &amp; time</text><text class="subt" x="256" y="282">normalization</text>
+  <rect class="sub" x="404" y="246" width="244" height="44" rx="8"/><text class="subt" x="418" y="266">Quality flags: zero/neg distance,</text><text class="subt" x="418" y="282">missing joins, invalid severity</text>
+
+  <!-- 3 Store -->
+  <rect class="layer" x="60" y="334" width="600" height="60" rx="14" fill="#0f2540"/>
+  <text x="360" y="371" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">DuckDB + Parquet — aggregate tables</text>
+
+  <!-- 4 Analytics -->
+  <rect class="layer" x="60" y="424" width="600" height="92" rx="14"/>
+  <text class="band" x="80" y="448">DETERMINISTIC ANALYTICS · SQL / Python</text>
+  <g>
+    <rect class="sub" x="80" y="458" width="84" height="44" rx="8"/><text class="subt" x="94" y="485">Vendor</text>
+    <rect class="sub" x="176" y="458" width="76" height="44" rx="8"/><text class="subt" x="190" y="485">Shift</text>
+    <rect class="sub" x="264" y="458" width="84" height="44" rx="8"/><text class="subt" x="278" y="485">Safety</text>
+    <rect class="sub" x="360" y="458" width="76" height="44" rx="8"/><text class="subt" x="374" y="485">Cost</text>
+    <rect class="sub" x="448" y="458" width="112" height="44" rx="8"/><text class="subt" x="462" y="485">Experience</text>
+    <rect class="sub" x="572" y="458" width="76" height="44" rx="8"/><text class="subt" x="586" y="479">Data</text><text class="subt" x="586" y="494">quality</text>
+  </g>
+
+  <!-- 5 Cross-domain -->
+  <rect class="layer" x="60" y="546" width="600" height="92" rx="14" stroke="#1668e3" stroke-width="2"/>
+  <text class="band" x="80" y="570" fill="#1668e3">CROSS-DOMAIN ANOMALY ENGINE</text>
+  <rect class="sub" x="80" y="580" width="130" height="44" rx="8"/><text class="subt" x="94" y="606">Historical</text>
+  <rect class="sub" x="222" y="580" width="120" height="44" rx="8"/><text class="subt" x="236" y="606">Peer compare</text>
+  <rect class="sub" x="354" y="580" width="140" height="44" rx="8"/><text class="subt" x="368" y="600">Multi-signal</text><text class="subt" x="368" y="615">correlation</text>
+  <rect class="sub" x="506" y="580" width="142" height="44" rx="8"/><text class="subt" x="520" y="600">Explainable</text><text class="subt" x="520" y="615">risk score</text>
+
+  <!-- 6 Orchestrator -->
+  <rect class="layer" x="60" y="668" width="600" height="92" rx="14"/>
+  <text class="band" x="80" y="692">LANGGRAPH ORCHESTRATOR</text>
+  <rect class="sub" x="80" y="702" width="120" height="44" rx="8"/><text class="subt" x="94" y="728">Select tools</text>
+  <rect class="sub" x="212" y="702" width="140" height="44" rx="8"/><text class="subt" x="226" y="728">Collect evidence</text>
+  <rect class="sub" x="364" y="702" width="120" height="44" rx="8"/><text class="subt" x="378" y="728">Quality check</text>
+  <rect class="sub" x="496" y="702" width="152" height="44" rx="8"/><text class="subt" x="510" y="722">Attach</text><text class="subt" x="510" y="737">evidence IDs</text>
+
+  <!-- 7 LLM -->
+  <rect class="layer" x="60" y="790" width="600" height="92" rx="14"/>
+  <text class="band" x="80" y="814">LLM SYNTHESIS · grounded</text>
+  <rect class="sub" x="80" y="824" width="110" height="44" rx="8"/><text class="subt" x="94" y="850">Explain</text>
+  <rect class="sub" x="202" y="824" width="150" height="44" rx="8"/><text class="subt" x="216" y="844">Business</text><text class="subt" x="216" y="859">interpretation</text>
+  <rect class="sub" x="364" y="824" width="130" height="44" rx="8"/><text class="subt" x="378" y="850">Recommend</text>
+  <rect class="sub" x="506" y="824" width="142" height="44" rx="8"/><text class="subt" x="520" y="844">Leadership</text><text class="subt" x="520" y="859">narrative</text>
+
+  <!-- 8 Validation -->
+  <rect class="layer" x="60" y="912" width="600" height="56" rx="14" fill="#eef4fb" stroke="#cddffb"/>
+  <text x="360" y="946" text-anchor="middle" font-size="14" font-weight="700" fill="#25476b">Numeric validation → repair → deterministic fallback</text>
+
+  <!-- 9 API -->
+  <rect class="layer" x="60" y="998" width="600" height="52" rx="14" fill="#1668e3"/>
+  <text x="360" y="1030" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">FastAPI</text>
+
+  <!-- 10 UI -->
+  <rect class="layer" x="60" y="1080" width="600" height="92" rx="14"/>
+  <text class="band" x="80" y="1104">MOVEINSYNC PULSE UI</text>
+  <g>
+    <rect class="sub" x="80" y="1114" width="92" height="44" rx="8"/><text class="subt" x="94" y="1141">Overview</text>
+    <rect class="sub" x="184" y="1114" width="92" height="44" rx="8"/><text class="subt" x="198" y="1141">Insights</text>
+    <rect class="sub" x="288" y="1114" width="88" height="44" rx="8"/><text class="subt" x="302" y="1141">Vendors</text>
+    <rect class="sub" x="388" y="1114" width="80" height="44" rx="8"/><text class="subt" x="402" y="1141">Safety</text>
+    <rect class="sub" x="480" y="1114" width="70" height="44" rx="8"/><text class="subt" x="492" y="1135">Shift</text><text class="subt" x="492" y="1150">ready</text>
+    <rect class="sub" x="562" y="1114" width="86" height="44" rx="8"/><text class="subt" x="574" y="1135">Ask Pulse</text><text class="subt" x="574" y="1150">/ Reports</text>
+  </g>
+
+  <!-- Human review -->
+  <rect x="60" y="1202" width="600" height="52" rx="26" fill="#ecfdf5" stroke="#34d399" stroke-width="1.5"/>
+  <text x="360" y="1234" text-anchor="middle" font-size="14" font-weight="700" fill="#065f46">👤 Human review / approval — recommended-action path</text>
+
+  <!-- vertical flow arrows -->
+  <path class="flow" d="M360 182 L360 212" marker-end="url(#arrow)"/>
+  <path class="flow" d="M360 304 L360 334" marker-end="url(#arrow)"/>
+  <path class="flow" d="M360 394 L360 424" marker-end="url(#arrow)"/>
+  <path class="flow" d="M360 516 L360 546" marker-end="url(#arrow)"/>
+  <path class="flow" d="M360 638 L360 668" marker-end="url(#arrow)"/>
+  <path class="flow" d="M360 760 L360 790" marker-end="url(#arrow)"/>
+  <path class="flow" d="M360 882 L360 912" marker-end="url(#arrow)"/>
+  <path class="flow" d="M360 968 L360 998" marker-end="url(#arrow)"/>
+  <path class="flow" d="M360 1050 L360 1080" marker-end="url(#arrow)"/>
+  <path class="flow" d="M360 1172 L360 1202" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+
+  <!-- annotations -->
+  <rect class="note" x="700" y="790" width="220" height="70" rx="9"/>
+  <text class="notet" x="716" y="820">⚠ The LLM never calculates</text>
+  <text class="notet" x="716" y="838">operational metrics — it only</text>
+  <text class="notet" x="716" y="856">explains supplied evidence.</text>
+  <path class="flow" d="M700 825 L660 830" stroke="#f59e0b" marker-end="url(#arrow)"/>
+
+  <rect class="note" x="700" y="668" width="220" height="70" rx="9"/>
+  <text class="notet" x="716" y="698">🔒 Raw trip data is never sent</text>
+  <text class="notet" x="716" y="716">to the LLM. Only compact,</text>
+  <text class="notet" x="716" y="734">ID-tagged evidence crosses.</text>
+  <path class="flow" d="M700 703 L660 710" stroke="#f59e0b" marker-end="url(#arrow)"/>
+
+  <rect class="note" x="700" y="546" width="220" height="70" rx="9" fill="#eef4fb" stroke="#1668e3"/>
+  <text x="716" y="576" font-size="12" font-weight="700" fill="#1668e3">★ Key innovation</text>
+  <text x="716" y="594" font-size="12" fill="#25476b">Anomalies that appear only</text>
+  <text x="716" y="612" font-size="12" fill="#25476b">when domains are combined.</text>
+  <path class="flow" d="M700 581 L660 585" stroke="#1668e3" marker-end="url(#arrow)"/>
+</svg>

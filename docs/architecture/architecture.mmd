@@ -1,0 +1,74 @@
+%% MoveInSync Pulse — System Architecture
+%% Render: mmdc -i architecture.mmd -o architecture.svg   (or paste into mermaid.live)
+flowchart TD
+    subgraph SRC["📥 Data Sources (CSV)"]
+        T[Trips / rides]
+        E[Employee &amp; boarding]
+        S[Safety alerts]
+        B[Billing]
+        F[Feedback]
+    end
+
+    subgraph DQ["🧹 Data Quality &amp; Normalization"]
+        DQ1[Schema reconciliation]
+        DQ2[Trip-ID normalization]
+        DQ3[Timestamp normalization]
+        DQ4[Quality flags: zero/neg distance, missing joins]
+    end
+
+    STORE[("🗄️ DuckDB + Parquet<br/>aggregate tables")]
+
+    subgraph ANA["📊 Deterministic Analytics (SQL / Python)"]
+        A1[Vendor]
+        A2[Shift]
+        A3[Safety]
+        A4[Cost]
+        A5[Experience]
+        A6[Data quality]
+    end
+
+    subgraph CDE["🔗 Cross-Domain Anomaly Engine"]
+        C1[Historical comparison]
+        C2[Peer comparison]
+        C3[Multi-signal correlation]
+        C4[Explainable cross_signal_risk_score]
+    end
+
+    subgraph AGENT["🤖 LangGraph Orchestrator"]
+        G1[Plan: select tools]
+        G2[Collect evidence]
+        G3[Quality check]
+        G4[Attach evidence IDs]
+    end
+
+    subgraph LLM["🧠 LLM Synthesis (grounded)"]
+        L1[Explain evidence]
+        L2[Business interpretation]
+        L3[Recommend actions]
+        L4[Leadership narrative]
+    end
+
+    VAL{{"Numeric validation<br/>+ repair / deterministic fallback"}}
+    API["⚡ FastAPI"]
+
+    subgraph UI["🖥️ MoveInSync Pulse UI"]
+        U1[Overview]
+        U2[AI Insights]
+        U3[Vendors]
+        U4[Safety]
+        U5[Shift Readiness]
+        U6[Ask Pulse]
+        U7[Reports]
+    end
+
+    HUMAN([👤 Human review / approval])
+
+    SRC --> DQ --> STORE --> ANA --> CDE --> AGENT --> LLM --> VAL --> API --> UI
+    UI -.recommended action.-> HUMAN
+
+    N1>"⚠ LLM never calculates operational metrics"]:::note
+    N2>"🔒 Raw trip data is never sent to the LLM;<br/>only compact structured evidence is"]:::note
+    N1 -.-> LLM
+    N2 -.-> AGENT
+
+    classDef note fill:#fff7ed,stroke:#f59e0b,color:#92400e,font-size:11px;
