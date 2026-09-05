@@ -10,7 +10,7 @@ configure_logging()
 app = FastAPI(title="MoveInSync Pulse", version="0.4.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173","https://move-in-sync-pulsee-seven.vercel.app/"],
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
